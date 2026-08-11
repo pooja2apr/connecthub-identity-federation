@@ -1,13 +1,29 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const session = require("express-session");
+const app = express();
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            httpOnly: true,
+            secure: false,
+            maxAge: 60 * 60 * 1000
+        }
+    })
+);
+const protectedRoutes = require("./routes/protected.routes");
 const discoveryRoutes = require("./routes/discovery.routes");
 const authRoutes = require("./routes/auth.routes");
-const app = express();
+
 
 
 app.use(cors());
 app.use(express.json());
+app.use("/api", protectedRoutes);
 app.use("/api", discoveryRoutes);
 app.use("/auth", authRoutes);
 

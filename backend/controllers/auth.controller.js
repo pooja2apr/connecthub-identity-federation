@@ -54,6 +54,11 @@ console.log("User:", {
     email: user.email,
     oid: user.oid
 });
+req.session.user = {
+    name: user.name,
+    email: user.email,
+    oid: user.oid
+};
 res.json({
     message: "Authentication successful",
     user: {
@@ -84,7 +89,72 @@ res.json({
         );
     }
 }
+async function me(req, res) {
 
+    if (!req.session.user) {
+        return res.status(401).json({
+            authenticated: false,
+            message: "User is not authenticated"
+        });
+    }
+
+    res.json({
+        authenticated: true,
+        user: req.session.user
+    });
+}
+
+
+async function logout(req, res) {
+
+    try {
+
+        req.session.destroy((err) => {
+
+            if (err) {
+                console.error(
+                    "Session destruction failed:",
+                    err
+                );
+
+                return res.status(500).json({
+                    message: "Logout failed"
+                });
+            }
+
+            res.clearCookie("connect.sid");
+
+            const tenantId = process.env.AZURE_TENANT_ID;
+
+            const postLogoutRedirectUri =
+                "http://localhost:5000/auth/logout/callback";
+
+            const logoutUrl =
+                `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/logout` +
+                `?post_logout_redirect_uri=${encodeURIComponent(postLogoutRedirectUri)}`;
+
+            return res.redirect(logoutUrl);
+        });
+
+    } catch (error) {
+
+        console.error("Logout error:", error);
+
+        return res.status(500).json({
+            message: "Logout failed"
+        });
+    }
+}
+async function logoutCallback(req, res) {
+
+    res.json({
+        message: "Logout successful",
+        authenticated: false
+    });
+}
 module.exports = {
-    callback
+    callback,
+    me,
+    logout,
+    logoutCallback
 };
