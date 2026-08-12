@@ -66,7 +66,8 @@ async function findByProviderName(providerName) {
             token_endpoint,
             jwks_uri,
             redirect_uri,
-            scope
+            scope,
+            issuer
         FROM identity_providers
         WHERE provider_name = ?
     `;

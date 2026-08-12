@@ -10,7 +10,7 @@ async function validateIdToken(idToken, provider) {
         idToken,
         JWKS,
         {
-            issuer: `https://login.microsoftonline.com/${provider.tenant_id}/v2.0`,
+            issuer: provider.issuer,
             audience: provider.client_id
         }
     );

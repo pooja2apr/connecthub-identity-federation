@@ -109,9 +109,58 @@ async function logout(req, res) {
 
     try {
 
+        const providerName = req.session.provider;
+
+        if (!providerName) {
+            return res.status(400).json({
+                message: "Identity provider not found in session"
+            });
+        }
+
+        const provider =
+            await federationModel.findByProviderName(providerName);
+
+        if (!provider) {
+            return res.status(404).json({
+                message: "Identity provider configuration not found"
+            });
+        }
+
+        const postLogoutRedirectUri =
+            "http://localhost:5000/auth/logout/callback";
+
+        let logoutUrl;
+
+        if (provider.provider_name === "Microsoft Entra ID") {
+
+            const tenantId = provider.tenant_id;
+
+            logoutUrl =
+                `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/logout` +
+                `?post_logout_redirect_uri=${encodeURIComponent(
+                    postLogoutRedirectUri
+                )}`;
+
+        } else if (provider.provider_name === "Keycloak") {
+
+            logoutUrl =
+                `${provider.issuer}/protocol/openid-connect/logout` +
+                `?client_id=${encodeURIComponent(provider.client_id)}` +
+                `&post_logout_redirect_uri=${encodeURIComponent(
+                    postLogoutRedirectUri
+                )}`;
+
+        } else {
+
+            return res.status(400).json({
+                message: "Logout not supported for this provider"
+            });
+        }
+
         req.session.destroy((err) => {
 
             if (err) {
+
                 console.error(
                     "Session destruction failed:",
                     err
@@ -123,15 +172,6 @@ async function logout(req, res) {
             }
 
             res.clearCookie("connect.sid");
-
-            const tenantId = process.env.AZURE_TENANT_ID;
-
-            const postLogoutRedirectUri =
-                "http://localhost:5000/auth/logout/callback";
-
-            const logoutUrl =
-                `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/logout` +
-                `?post_logout_redirect_uri=${encodeURIComponent(postLogoutRedirectUri)}`;
 
             return res.redirect(logoutUrl);
         });
