@@ -8,7 +8,9 @@ function getClientSecret(provider) {
     if (provider.provider_name === "Keycloak") {
         return process.env.KEYCLOAK_CLIENT_SECRET;
     }
-
+     if (provider.provider_name === "Okta") {
+        return process.env.OKTA_CLIENT_SECRET;
+    }
     throw new Error("Client secret not configured");
 }
 

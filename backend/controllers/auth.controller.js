@@ -59,6 +59,11 @@ req.session.user = {
     email: user.email,
     oid: user.oid
 };
+req.session.provider = provider.provider_name;
+console.log(provider.provider_name);
+
+req.session.idToken = tokens.id_token;
+//console.log(tokens.id_token);
 res.json({
     message: "Authentication successful",
     user: {
@@ -106,6 +111,23 @@ async function me(req, res) {
 
 
 async function logout(req, res) {
+    console.log(
+        "Session provider:",
+        req.session.provider
+    );
+
+    console.log(
+        "Has ID token:",
+        !!req.session.idToken
+    );
+
+    console.log(
+        "ID token length:",
+        req.session.idToken
+            ? req.session.idToken.length
+            : 0
+    );
+
 
     try {
 
@@ -150,7 +172,25 @@ async function logout(req, res) {
                     postLogoutRedirectUri
                 )}`;
 
-        } else {
+        } else if (provider.provider_name === "Okta") {
+
+    const idToken = req.session.idToken;
+
+console.log("Logout provider:", provider.provider_name);
+console.log("Has ID token:", !!idToken);
+console.log(
+    "ID token length:",
+    idToken ? idToken.length : 0
+);
+
+    logoutUrl =
+        `${provider.issuer}/v1/logout` +
+        `?id_token_hint=${encodeURIComponent(idToken)}` +
+        `&post_logout_redirect_uri=${encodeURIComponent(
+            postLogoutRedirectUri
+        )}`;
+}
+        else {
 
             return res.status(400).json({
                 message: "Logout not supported for this provider"
