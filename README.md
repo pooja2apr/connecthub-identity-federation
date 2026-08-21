@@ -44,4 +44,8 @@ Authenticated User
 ConnectHub Session
   |
   v
+<<<<<<< Updated upstream
 Protected API
+=======
+Protected API
+>>>>>>> Stashed changes
