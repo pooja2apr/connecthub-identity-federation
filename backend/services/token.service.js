@@ -1,17 +1,20 @@
 const axios = require("axios");
 function getClientSecret(provider) {
-
-    if (provider.provider_name === "Microsoft Entra ID") {
-        return process.env.AZURE_CLIENT_SECRET;
+    if (!provider.client_secret_key) {
+        throw new Error(
+            `Client secret key not configured for provider: ${provider.provider_name}`
+        );
     }
 
-    if (provider.provider_name === "Keycloak") {
-        return process.env.KEYCLOAK_CLIENT_SECRET;
+    const clientSecret = process.env[provider.client_secret_key];
+
+    if (!clientSecret) {
+        throw new Error(
+            `Client secret not found in environment variable: ${provider.client_secret_key}`
+        );
     }
-     if (provider.provider_name === "Okta") {
-        return process.env.OKTA_CLIENT_SECRET;
-    }
-    throw new Error("Client secret not configured");
+
+    return clientSecret;
 }
 
 async function exchangeCodeForTokens(code, provider) {

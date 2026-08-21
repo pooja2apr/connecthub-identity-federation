@@ -2,6 +2,75 @@ const tokenService = require("../services/token.service");
 const idTokenService = require("../services/idToken.service");
 const stateService = require("../services/state.service");
 const federationModel = require("../models/federation.model");
+const federationService = require("../services/federation.service");
+const authorizationCodeService =
+    require("../services/authorizationCode.service");
+    const jwtService =
+    require("../services/jwt.service");
+
+async function authorize(req, res) {
+
+    try {
+
+        const {
+            application,
+            email,
+            redirect_uri,
+            state
+        } = req.query;
+
+        if (!application || !email || !redirect_uri) {
+            return res.status(400).json({
+                message: "application, email and redirect_uri are required"
+            });
+        }
+
+        // 1. Find registered application
+        const app =
+            await federationModel.findApplicationByName(
+                application
+            );
+
+        if (!app) {
+            return res.status(404).json({
+                message: "Application not found"
+            });
+        }
+
+        // 2. Validate redirect URI
+        if (app.redirect_uri !== redirect_uri) {
+
+            return res.status(400).json({
+                message: "Invalid redirect_uri"
+            });
+        }
+
+        // 3. Find the enterprise IdP
+        const result =
+            await federationService.buildAuthorizationUrl(
+                application,
+                email,
+                redirect_uri,
+                state
+            );
+
+        if (!result) {
+            return res.status(404).json({
+                message: "Federation configuration not found."
+            });
+        }
+
+        return res.redirect(result.redirectUrl);
+
+    } catch (error) {
+
+        console.error("Authorization error:", error);
+
+        return res.status(500).json({
+            message: "Authorization failed"
+        });
+    }
+}
 async function callback(req, res) {
 
     try {
@@ -61,7 +130,43 @@ req.session.user = {
 };
 req.session.provider = provider.provider_name;
 console.log(provider.provider_name);
+req.session.idToken = tokens.id_token;
 
+// Create authorization code for the client application
+const authorizationCode =
+    authorizationCodeService.createAuthorizationCode({
+
+        application: stateData.application,
+
+        redirectUri: stateData.redirectUri,
+
+        clientState: stateData.clientState,
+
+        user: {
+            name: user.name,
+            email: user.email,
+            oid: user.oid
+        },
+
+        idToken: tokens.id_token,
+
+        provider: provider.provider_name
+    });
+
+console.log(
+    "Authorization code created:",
+    authorizationCode
+);
+
+// Redirect user back to the application
+const redirectUrl =
+    `${stateData.redirectUri}` +
+    `?code=${encodeURIComponent(authorizationCode)}` +
+    `&state=${encodeURIComponent(stateData.clientState || "")}`;
+    console.log("Redirecting application to:", redirectUrl);
+
+return res.redirect(redirectUrl);
+/*
 req.session.idToken = tokens.id_token;
 //console.log(tokens.id_token);
 res.json({
@@ -71,7 +176,7 @@ res.json({
         email: user.email
     }
 });
-
+*/
         // TEMPORARY: testing only
         /*
         res.json({
@@ -92,6 +197,110 @@ res.json({
         res.status(500).send(
             "Authentication failed."
         );
+    }
+}
+async function token(req, res) {
+
+    try {
+
+        const {
+            code,
+            client_id,
+            redirect_uri
+        } = req.body;
+
+        // 1. Validate required parameters
+        if (!code || !client_id || !redirect_uri) {
+            return res.status(400).json({
+                error: "invalid_request",
+                error_description:
+                    "code, client_id and redirect_uri are required"
+            });
+        }
+
+        console.log("Token request received");
+        console.log("Client ID:", client_id);
+        console.log("Redirect URI:", redirect_uri);
+
+        // 2. Consume authorization code
+        const authorizationData =
+            authorizationCodeService.consumeAuthorizationCode(
+                code
+            );
+
+        if (!authorizationData) {
+
+            return res.status(400).json({
+                error: "invalid_grant",
+                error_description:
+                    "Invalid, expired or already used authorization code"
+            });
+        }
+
+        // 3. Validate client
+        if (
+            authorizationData.application !== client_id
+        ) {
+
+            return res.status(400).json({
+                error: "invalid_grant",
+                error_description:
+                    "Client ID does not match authorization request"
+            });
+        }
+
+        // 4. Validate redirect URI
+        if (
+            authorizationData.redirectUri !== redirect_uri
+        ) {
+
+            return res.status(400).json({
+                error: "invalid_grant",
+                error_description:
+                    "Redirect URI does not match authorization request"
+            });
+        }
+
+        console.log(
+            "Authorization code validated successfully"
+        );
+
+        // Temporary response
+        /*
+        return res.json({
+            message: "Authorization code exchanged successfully",
+            user: authorizationData.user,
+            provider: authorizationData.provider,
+            hasIdToken: !!authorizationData.idToken
+        });
+        */
+       // Create ConnectHub-issued ID token
+const idToken =
+    jwtService.createIdToken(
+        authorizationData.user,
+        client_id
+    );
+
+console.log(
+    "ConnectHub ID token created."
+);
+
+return res.json({
+    access_token: idToken,
+    token_type: "Bearer",
+    expires_in: 3600,
+    id_token: idToken
+});
+
+    } catch (error) {
+
+        console.error("Token error:", error);
+
+        return res.status(500).json({
+            error: "server_error",
+            error_description:
+                "Internal server error"
+        });
     }
 }
 async function me(req, res) {
@@ -233,7 +442,9 @@ async function logoutCallback(req, res) {
     });
 }
 module.exports = {
+    authorize,
     callback,
+    token,
     me,
     logout,
     logoutCallback

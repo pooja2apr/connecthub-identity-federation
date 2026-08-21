@@ -3,7 +3,8 @@ const stateService = require("./state.service");
 
 const federationModel = require("../models/federation.model");
 
-async function buildAuthorizationUrl(application, email) {
+async function buildAuthorizationUrl(application, email, redirectUri,
+    clientState) {
 
     const domain = email.split("@")[1];
 
@@ -17,9 +18,12 @@ async function buildAuthorizationUrl(application, email) {
     }
 
     const stateData = {
+     application: application,   
     provider: provider.provider_name,
     createdAt: Date.now(),
-    nonce: crypto.randomUUID()
+    nonce: crypto.randomUUID(),
+    redirectUri: redirectUri,
+    clientState: clientState
 };
 
 const state = stateService.encryptState(stateData);

@@ -1,5 +1,24 @@
 const db = require("../config/db");
 
+async function findApplicationByName(applicationName) {
+
+    const query = `
+        SELECT
+            id,
+            application_name,
+            description,
+            redirect_uri
+        FROM applications
+        WHERE application_name = ?
+    `;
+
+    const [rows] = await db.execute(query, [
+        applicationName
+    ]);
+
+    return rows[0];
+}
+
 async function findByApplicationAndDomain(applicationName, emailDomain) {
 
     const query = `
@@ -27,7 +46,8 @@ async function findByApplicationAndDomain(applicationName, emailDomain) {
 
             ip.redirect_uri,
 
-            ip.scope
+            ip.scope,
+            ip.client_secret_key
 
         FROM applications a
 
@@ -67,7 +87,8 @@ async function findByProviderName(providerName) {
             jwks_uri,
             redirect_uri,
             scope,
-            issuer
+            issuer,
+            client_secret_key
         FROM identity_providers
         WHERE provider_name = ?
     `;
@@ -81,5 +102,6 @@ async function findByProviderName(providerName) {
 
 module.exports = {
     findByApplicationAndDomain,
-    findByProviderName
+    findByProviderName,
+    findApplicationByName
 };

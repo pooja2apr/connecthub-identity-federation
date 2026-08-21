@@ -16,7 +16,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "jose": "^6.2.8",
+    "jose": "^6.2.9",
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.1.0",
     "mysql2": "^3.23.2",

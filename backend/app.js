@@ -18,6 +18,8 @@ app.use(
 const protectedRoutes = require("./routes/protected.routes");
 const discoveryRoutes = require("./routes/discovery.routes");
 const authRoutes = require("./routes/auth.routes");
+const oidcDiscoveryRoutes =
+    require("./routes/oidcDiscovery.routes");
 
 
 
@@ -26,6 +28,10 @@ app.use(express.json());
 app.use("/api", protectedRoutes);
 app.use("/api", discoveryRoutes);
 app.use("/auth", authRoutes);
+const jwksRoutes =
+    require("./routes/jwks.routes");
+    app.use("/", jwksRoutes);
+    app.use("/", oidcDiscoveryRoutes);
 
 
 app.get("/", (req, res) => {
