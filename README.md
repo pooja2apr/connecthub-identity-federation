@@ -1,14 +1,14 @@
 # ConnectHub Identity Federation
 
-ConnectHub is a B2B Identity Federation platform that allows users from different organizations to access the same application using their organization's Identity Provider (IdP).
+ConnectHub is a lightweight B2B Identity Federation platform that allows users from different organizations to access the same SaaS application using their organization's Identity Provider (IdP).
 
 Instead of asking users to select an Identity Provider, ConnectHub dynamically discovers the appropriate IdP based on the user's email domain.
 
-The project demonstrates how a single application can support multiple organizations and multiple Identity Providers using OAuth 2.0 and OpenID Connect.
+The project demonstrates how a single SaaS application can support multiple organizations and multiple Identity Providers using OAuth 2.0 and OpenID Connect.
 
 ## Project Overview
 
-The basic flow is:
+The basic authentication flow is:
 
 ```text
 User
@@ -44,8 +44,4 @@ Authenticated User
 ConnectHub Session
   |
   v
-<<<<<<< Updated upstream
-Protected API
-=======
-Protected API
->>>>>>> Stashed changes
+SaaS Application
